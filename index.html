@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vainilla Atelier Studio · Simulador 3D de producción</title>
+<link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="brand">
+    <div class="eyebrow"><span class="live-dot"></span> LABORATORIO INTERACTIVO DE PRODUCCIÓN <span class="version">EDICIÓN 3D</span></div>
+    <h1><span class="brand-icon">✳</span> Vainilla <i>Atelier</i> <span class="brand-suffix">/ Bakery Studio</span></h1>
+    <p>Explora una pastelería en 3D, programa sus horneadas y descubre cómo optimizar ocho productos con <b>27 variables y 29 restricciones reales</b>. Ajusta los parámetros y observa cómo cambia la solución.</p>
+  </div>
+  <div class="zbox">
+    <div class="kpi big"><div class="lab">Z · utilidad semanal</div><div class="val" id="kZ">—</div><div class="sub" id="kZd">datos del proyecto</div></div>
+    <div class="kpi"><div class="lab">Estado</div><div class="val" style="font-size:14px;padding-top:4px" id="kEst"></div><div class="sub" id="kEstS">solución entera exacta</div></div>
+    <div class="kpi"><div class="lab">Unidades / semana</div><div class="val" id="kU">—</div><div class="sub" id="kD">—</div></div>
+    <div class="fsbar">
+      <button class="btn" id="btnFS" title="Pantalla completa (tecla F)">⛶ Pantalla completa</button>
+      <button class="btn" id="btnSolo" title="Ver solo la cocina (tecla C)">◧ Solo la cocina</button>
+    </div>
+  </div>
+</header>
+<div class="grid">
+  <!-- ===================== IZQUIERDA: la cocina ===================== -->
+  <div>
+    <div class="card">
+      <div id="stage">
+        <div id="canvas3d"></div>
+        <div id="labels"></div>
+        <div class="stage-brand"><span class="stage-indicator"></span> COCINA EN VIVO <span class="stage-sep">/</span> VISTA 3D</div>
+        <div class="stage-story" aria-live="polite">
+          <div class="story-icon" id="storyIcon">🥣</div>
+          <div><div class="story-kicker" id="storyStep">SIMULADOR EDUCATIVO</div><div class="story-title" id="storyTitle">Tu obrador, tus decisiones</div><div class="story-desc" id="storyDesc">Gira la cocina o inicia la semana para ver cómo se preparan y hornean los pedidos.</div></div>
+        </div>
+        <div class="vistas">
+          <button class="vbtn on" data-v="general">Vista general</button>
+          <button class="vbtn" data-v="horno">Horno</button>
+          <button class="vbtn" data-v="mostrador">Mostrador</button>
+          <button class="vbtn" data-v="alto">Desde arriba</button>
+          <button class="vbtn" id="vauto">↻ Girar</button>
+        </div>
+        <div class="cargando" id="cargando">Cargando la cocina 3D…</div>
+      </div>
+      <div class="scenebar">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="btn pri" id="play">▶ Simular la semana</button>
+          <button class="btn sm" id="reset2">Reiniciar</button>
+          <label class="speed-label" for="velSim">Velocidad <select id="velSim" aria-label="Velocidad de simulación"><option value="1">1×</option><option value="2" selected>2×</option><option value="3">3×</option><option value="5">5×</option></select></label>
+          <span class="mini" id="clock">Jueves 4:00 p.m. · listo para empezar</span>
+        </div>
+        <span class="mini">🖱 Arrastra para girar · rueda para acercar</span>
+      </div>
+      <div class="process-steps" aria-label="Etapas de fabricación">
+        <div class="process-step" data-phase="amasado"><span>01</span><b>Preparación</b><small>Recetas completas</small></div>
+        <div class="process-step" data-phase="horno"><span>02</span><b>Horneado</b><small>Capacidad del horno</small></div>
+        <div class="process-step" data-phase="empaque"><span>03</span><b>Mostrador</b><small>Pedidos y utilidad</small></div>
+      </div>
+      <div class="tl">
+        <div class="tlhead">
+          <h3>Las 3 franjas de producción · ocupación del horno</h3>
+          <span class="mini" id="tlsum">—</span>
+        </div>
+        <div id="franjas"></div>
+        <div style="margin-top:9px">
+          <div class="gauge"><div class="gh"><span>Horno · Σ TCᵢ·Yᵢ ≤ H</span><b id="gh1">—</b></div>
+            <div class="gtrack"><div class="gfill" id="gf1" style="width:0%;background:linear-gradient(90deg,#d99a5e,#e9b96b)"></div></div></div>
+          <div class="gauge"><div class="gh"><span>Mano de obra · Σ TRᵢ·Lᵢ ≤ MO</span><b id="gh2">—</b></div>
+            <div class="gtrack"><div class="gfill" id="gf2" style="width:0%;background:linear-gradient(90deg,#a99bdd,#e8899f)"></div></div></div>
+          <p class="mini" id="bottleneck"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== DERECHA: paneles ===================== -->
+  <div class="card">
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-p="p1">◈ Resultado</button>
+      <button class="tab" role="tab" aria-selected="false" data-p="p2">⚙ Controles</button>
+      <button class="tab" role="tab" aria-selected="false" data-p="p3">★ Reto</button>
+      <button class="tab" role="tab" aria-selected="false" data-p="p4">▤ Modelo</button>
+      <button class="tab" role="tab" aria-selected="false" data-p="p5">? Guía</button>
+    </div>
+
+    <!-- ===== P1 · RESULTADO ===== -->
+    <div class="pane on" id="p1">
+      <p class="tx" id="solhead"></p>
+      <div id="cards"></div>
+      <h2 class="sec" style="margin-top:14px"><span class="n">⌛</span>Recursos</h2>
+      <div style="overflow-x:auto"><table id="trec"></table></div>
+      <div class="note" id="solnote"></div>
+      <h2 class="sec" style="margin-top:14px"><span class="n">!</span>Sobrantes de receta</h2>
+      <p class="tx" id="sobrahead"></p>
+      <div style="overflow-x:auto"><table id="tsobra"></table></div>
+    </div>
+
+    <!-- ===== P2 · CONTROLES ===== -->
+    <div class="pane" id="p2">
+      <p class="tx">Cambia cualquier dato y el modelo se resuelve de nuevo al instante. Arriba los recursos de la empresa, abajo los datos de cada producto.</p>
+      <div class="seg" id="presets">
+        <button data-k="base" class="on">Datos del proyecto</button>
+        <button data-k="e1">Escenario 1 · D₁ = 6</button>
+        <button data-k="e2">Escenario 2 · fresa $16.000</button>
+      </div>
+      <h2 class="sec"><span class="n">⚙</span>Capacidad de la empresa</h2>
+      <div id="capctrl"></div>
+
+      <h2 class="sec" style="margin-top:14px"><span class="n">🧁</span>Datos de un producto</h2>
+      <select id="selProd"></select>
+      <div id="prodctrl" style="margin-top:9px"></div>
+
+      <h2 class="sec" style="margin-top:16px"><span class="n">1</span>Escenario 1 · restricción activa</h2>
+      <p class="tx">La <b>demanda de zanahoria</b> (X₁ ≤ D₁) está activa en la solución original y es el producto de mayor utilidad unitaria. Justificación: más pedidos en Amor y Amistad, Día de la Madre o diciembre.</p>
+      <div id="chart1"></div>
+      <p class="tx" id="exp1"></p>
+      <div style="overflow-x:auto"><table id="tcmp1"></table></div>
+
+      <h2 class="sec" style="margin-top:16px"><span class="n">2</span>Escenario 2 · coeficiente de la F.O.</h2>
+      <p class="tx">U₄ = precio − costo del cuchareable de fresa. En el informe el precio se redondea de $15.067,50 a <b>$16.000</b> y el costo ($10.045) no cambia, así que U₄ = $5.955.</p>
+      <div id="chart2"></div>
+      <p class="tx" id="exp2"></p>
+      <div style="overflow-x:auto"><table id="tcmp2"></table></div>
+    </div>
+
+    <!-- ===== P3 · RETO ===== -->
+    <div class="pane" id="p3">
+      <h2 class="sec"><span class="n">★</span>¿Le puedes ganar al modelo?</h2>
+      <p class="tx">Arma tú el plan de producción. Las horneadas y recetas se calculan solas (Yᵢ = ⌈Xᵢ/CHᵢ⌉, Lᵢ = ⌈Xᵢ/RRᵢ⌉) y el tablero te dice si tu plan es <b>factible</b> y cuánto deja. Sirve para mostrar en la sustentación por qué hace falta optimizar y no decidir a ojo.</p>
+      <div class="marcador">
+        <div><div class="l">Tu utilidad</div><div class="v" id="rZ">—</div></div>
+        <div><div class="l">Óptimo del modelo</div><div class="v" id="rOpt">—</div></div>
+        <div><div class="l">Diferencia</div><div class="v" id="rDif">—</div></div>
+      </div>
+      <div class="vered" id="rVer">Mueve las barras para armar tu plan.</div>
+      <div class="reto">
+        <div class="gauge"><div class="gh"><span>Horno</span><b id="rgh1">—</b></div>
+          <div class="gtrack"><div class="gfill" id="rgf1" style="width:0%"></div></div></div>
+        <div class="gauge" style="margin-bottom:2px"><div class="gh"><span>Mano de obra</span><b id="rgh2">—</b></div>
+          <div class="gtrack"><div class="gfill" id="rgf2" style="width:0%"></div></div></div>
+      </div>
+      <div class="reto" id="retorows"></div>
+      <div class="row">
+        <button class="btn" id="rCero">Empezar en cero</button>
+        <button class="btn" id="rDem">Toda la demanda</button>
+        <button class="btn pri" id="rOptBtn">Ver la solución óptima</button>
+      </div>
+      <div class="note">Al salir de esta pestaña, la cocina vuelve a mostrar la solución óptima del modelo.</div>
+    </div>
+
+    <!-- ===== P4 · EL MODELO ===== -->
+    <div class="pane" id="p4">
+      <p class="tx">Del taller real a la solución óptima, en siete pasos. Todo se recalcula con los datos que tengas cargados en <b>Controles</b>.</p>
+
+      <div class="step open"><button><span class="n">1</span>El problema empresarial<span class="cv">−</span></button>
+        <div class="body">
+          <p class="tx">Vainilla Atelier es una pastelería artesanal que produce <b>bajo pedido</b> y concentra sus ventas en el fin de semana. Produce en tres franjas: jueves 4:00–10:00 p.m., viernes 9:00 a.m.–8:00 p.m. y sábado 9:00 a.m.–12:00 m. En ese tiempo <b>dos personas comparten un solo horno</b> para elaborar ocho productos.</p>
+          <p class="tx">Hoy decide de forma empírica cuánto producir. El modelo responde una pregunta: <b>¿cuántas unidades de cada producto conviene elaborar cada semana para que la utilidad sea máxima</b>, sin pasarse del horno, de la mano de obra ni de la demanda?</p>
+          <div class="note">Producir primero lo más rentable no funciona: el pastel de zanahoria deja $9.523,64 por unidad pero solo se piden 4; la galleta deja $1.212,53 y se piden 68. Lo que decide es la <b>combinación</b>.</div>
+        </div>
+      </div>
+
+      <div class="step"><button><span class="n">2</span>Variables de decisión · 27<span class="cv">+</span></button>
+        <div class="body">
+          <p class="tx">Cuatro familias, todas <b>enteras y no negativas</b>: no se vende medio alfajor ni se amasa media receta.</p>
+          <table><thead><tr><th>Var.</th><th>Qué decide</th><th>Unidad</th><th>#</th></tr></thead><tbody>
+            <tr><td><b>Xᵢ</b></td><td style="text-align:left">Unidades a producir del producto i</td><td>und/sem</td><td>8</td></tr>
+            <tr><td><b>Yᵢ</b></td><td style="text-align:left">Horneadas (cargas de horno) del producto i</td><td>horneadas/sem</td><td>8</td></tr>
+            <tr><td><b>Lᵢ</b></td><td style="text-align:left">Recetas completas del producto i</td><td>recetas/sem</td><td>8</td></tr>
+            <tr><td><b>Cₖ</b></td><td style="text-align:left">Cajitas de 2 unidades (galleta, alfajor, rollo)</td><td>cajitas/sem</td><td>3</td></tr>
+          </tbody></table>
+          <div class="note"><b>¿Por qué no basta con Xᵢ?</b> El horno no recibe unidades sueltas, recibe <b>cargas</b>; y la masa se hace por <b>receta completa</b>. Yᵢ y Lᵢ traducen “cuánto vendo” en “cuánto recurso gasto”, y son la razón de que el modelo sea entero.</div>
+        </div>
+      </div>
+
+      <div class="step"><button><span class="n">3</span>Parámetros<span class="cv">+</span></button>
+        <div class="body">
+          <p class="tx">Lo que el modelo <b>no decide</b>: sale del costeo de recetas, de las fichas de producción y del histórico de pedidos.</p>
+          <div style="max-height:270px;overflow:auto"><table id="tparam"></table></div>
+          <p class="mini" style="margin-top:7px" id="paramfoot"></p>
+        </div>
+      </div>
+
+      <div class="step"><button><span class="n">4</span>Función objetivo<span class="cv">+</span></button>
+        <div class="body">
+          <div class="eq">Max <span class="op">Z</span> = Σ<sub>i=1</sub><sup>8</sup> Uᵢ · Xᵢ &nbsp; [$/sem]<small>utilidad unitaria × unidades producidas, sumada sobre los ocho productos</small></div>
+          <p class="tx">Z depende <b>solo de Xᵢ</b>. Yᵢ y Lᵢ no aparecen: hornear o amasar no genera utilidad, solo <b>consume</b> capacidad. De ahí sale el paso de depuración del punto 6.</p>
+          <div class="eq" id="eqZ" style="font-size:11.5px;text-align:left"></div>
+        </div>
+      </div>
+
+      <div class="step"><button><span class="n">5</span>Restricciones · 29, en vivo<span class="cv">+</span></button>
+        <div class="body">
+          <p class="tx"><span class="pill a">activa</span> holgura exacta 0: ese recurso se agotó y está mandando. <span class="pill i">holgura</span> sobra capacidad.</p>
+          <div style="max-height:320px;overflow:auto"><table id="trest"></table></div>
+          <div class="note" id="restnote"></div>
+        </div>
+      </div>
+
+      <div class="step"><button><span class="n">6</span>Cómo se resuelve (PuLP + CBC)<span class="cv">+</span></button>
+        <div class="body">
+          <p class="tx"><b>1.</b> PuLP arma el problema y se lo entrega al solver <b>CBC</b>. <b>2.</b> CBC resuelve primero la <b>relajación lineal</b> con el <b>símplex</b>. <b>3.</b> Si una variable sale fraccionaria, <b>ramifica</b>: Xᵢ ≤ ⌊v⌋ en una rama y Xᵢ ≥ ⌈v⌉ en la otra, podando las que ya no pueden superar la mejor entera hallada. <b>4.</b> Cuando ninguna rama puede mejorarla, esa es la óptima y devuelve <code>Optimal</code>.</p>
+          <div class="note"><b>El segundo paso del notebook.</b> Como Z no depende de Yᵢ ni Lᵢ, el solver puede devolver horneadas vacías sin dejar de ser óptimo. Por eso se resuelve otra vez con las mismas 29 restricciones, exigiendo Σ Uᵢ·Xᵢ ≥ Z* y minimizando Σ(Yᵢ + Lᵢ). <b>Z no cambia</b>: solo se limpia el plan.</div>
+          <p class="tx">Este simulador llega al mismo resultado por otro camino y por eso responde al instante: como Yᵢ = ⌈Xᵢ/CHᵢ⌉ y Lᵢ = ⌈Xᵢ/RRᵢ⌉ quedan determinadas por Xᵢ, el problema se reduce a una <b>mochila entera de dos recursos</b> que se resuelve exacta por programación dinámica, y el plan sale ya depurado. <b>Reproduce exactamente las cifras del notebook.</b></p>
+        </div>
+      </div>
+
+      <div class="step"><button><span class="n">7</span>Corridas complementarias<span class="cv">+</span></button>
+        <div class="body">
+          <p class="tx"><b>Variación de la mano de obra.</b> El efecto es <b>escalonado</b>, porque las recetas son indivisibles.</p>
+          <div style="overflow-x:auto"><table id="tmo"></table></div>
+          <p class="tx" style="margin-top:13px"><b>Relajación lineal continua.</b> Mismas 29 restricciones, pero con variables decimales.</p>
+          <div style="overflow-x:auto"><table id="tlp"></table></div>
+          <div class="note k" id="lpnote"></div>
+          <p class="tx" style="margin-top:13px"><b>Reglas hipotéticas A, B y C.</b> Con la demanda completa harían falta 2.460 min-persona y solo hay 2.400: hay que renunciar a una receta. ¿Cuál conviene recortar?</p>
+          <div style="overflow-x:auto"><table id="treglas"></table></div>
+        </div>
+      </div>
+
+      <div class="step"><button><span class="n">8</span>Interpretación<span class="cv">+</span></button>
+        <div class="body" id="interp"></div>
+      </div>
+    </div>
+
+    <!-- ===== P5 ===== -->
+    <div class="pane" id="p5">
+      <h2 class="sec"><span class="n">?</span>Preguntas que puede hacer la docente</h2>
+      <div id="qas"></div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span>Vainilla Atelier · Investigación de Operaciones 1 · UAO · Emily Yanguas · Juan Camilo Sossa · Daniela Vásquez · Alejandro Muñoz · Isabella Morales</span>
+  <span>Modelo resuelto de forma exacta dentro de la página · cocina en Three.js (WebGL)</span>
+</footer>
+</div>
+
+<!-- 1) librería 3D (Three.js + OrbitControls + RoundedBoxGeometry) -->
+<script src="lib/three.bundle.js"></script>
+<!-- 2) la cocina 3D -->
+<script src="js/escena3d.js"></script>
+<!-- 3) el modelo matemático -->
+<script src="js/solver.js"></script>
+<!-- 4) datos del proyecto y puente con la escena -->
+<script src="js/datos.js"></script>
+<!-- 5) tablas, restricciones y franjas -->
+<script src="js/tablas.js"></script>
+<!-- 6) escenarios de sensibilidad -->
+<script src="js/escenarios.js"></script>
+<!-- 7) modo reto -->
+<script src="js/reto.js"></script>
+<!-- 8) controles, animación y arranque -->
+<script src="js/app.js"></script>
+</body>
+</html>
