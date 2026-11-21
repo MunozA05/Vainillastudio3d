@@ -9,11 +9,11 @@ function chart(pts,cur,base,xlab,ylab){
   return `<div style="font-size:10px;color:var(--mute);display:flex;justify-content:space-between;margin-bottom:3px">
     <span>${ylab}</span><span>● actual &nbsp; ┆ original</span></div>
   <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:88px;display:block;
-    background:#1d1518;border:1px solid var(--line);border-radius:9px">
-    <path d="${d}" fill="none" stroke="#e9b96b" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
-    <line x1="${sx(base[0])}" y1="0" x2="${sx(base[0])}" y2="${H}" stroke="#6b525a" stroke-width="1"
+    background:#FFFCF8;border:1px solid var(--line);border-radius:9px">
+    <path d="${d}" fill="none" stroke="#C96C7C" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+    <line x1="${sx(base[0])}" y1="0" x2="${sx(base[0])}" y2="${H}" stroke="#C79445" stroke-width="1"
       stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/>
-    <circle cx="${sx(cur[0])}" cy="${sy(cur[1])}" r="1.7" fill="#e8899f" vector-effect="non-scaling-stroke"/>
+    <circle cx="${sx(cur[0])}" cy="${sy(cur[1])}" r="1.9" fill="#48271F" vector-effect="non-scaling-stroke"/>
   </svg>
   <div style="font-size:10px;color:var(--mute);display:flex;justify-content:space-between;margin-top:3px">
     <span>${num(x0)}</span><span>${xlab}</span><span>${num(x1)}</span></div>`;

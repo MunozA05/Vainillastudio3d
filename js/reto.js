@@ -40,7 +40,7 @@ function retoCalc(){
   $('#rDif').innerHTML=`<span class="${dif>=0?'up':'down'}">${dif>0?'+':''}${money(dif)}</span>`;
   const g=(n,u,lim)=>{const f=$('#rgf'+n),h=$('#rgh'+n); if(!f||!h)return;
     f.style.width=Math.min(100,lim?u/lim*100:0)+'%';
-    f.style.background=u>lim?'linear-gradient(90deg,#e4705f,#f09484)':'linear-gradient(90deg,#a99bdd,#86c79a)';
+    f.style.background=u>lim?'linear-gradient(90deg,#C0453F,#E0877F)':'linear-gradient(90deg,#C96C7C,#DF8F9B)';
     h.innerHTML=`${num(u)} / ${num(lim)}${u>lim?' <span style="color:var(--crit)">se pasa</span>':''}`};
   g(1,horno,DAT.H); g(2,mo,DAT.MO);
   const v=$('#rVer');

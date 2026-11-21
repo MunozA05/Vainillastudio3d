@@ -23,8 +23,10 @@ Three.js viene incluido en `lib/`.
 
 | Archivo | Qué contiene |
 |---|---|
-| `index.html` | La estructura de la página: encabezado, la cocina y los 5 paneles de la derecha. **Aquí se edita el texto.** |
-| `css/estilos.css` | Todos los estilos. Los colores están arriba, en `:root`. |
+| `index.html` | La estructura de la página: barra lateral, encabezado, banner, indicadores, la cocina y los 5 paneles de la derecha. **Aquí se edita el texto.** |
+| `css/estilos.css` | Todos los estilos. La paleta de la pastelería está arriba, en `:root`. |
+| `assets/` | El logo oficial. `logo-vainilla.png` es el original intacto; `logo-vainilla-transparente.png` es el mismo logo sin el fondo blanco, optimizado para la web (es el que usa la página). |
+| `js/ui.js` | **Solo presentación.** Conecta la barra lateral con las pestañas que ya existían, abre el menú compacto en móvil y reenvía el botón «Simular semana» del banner al botón `#play`. No calcula nada. |
 | `js/datos.js` | **Los datos del proyecto** (`BASE`), los nombres, los colores de cada producto y el puente con la escena 3D. |
 | `js/solver.js` | El modelo matemático: resuelve el problema entero y la relajación lineal. |
 | `js/escena3d.js` | La cocina en Three.js: muebles, luces, sombras, cámara y animaciones. |
@@ -86,7 +88,28 @@ en `js/app.js`, en la constante `QAS`.
 - **Vistas de cámara:** el objeto `VISTAS`, con `p` = posición y `t` = a dónde mira.
 
 ### Los colores de la interfaz
-`css/estilos.css`, bloque `:root` (líneas 3 a 8).
+`css/estilos.css`, bloque `:root`. Arriba está la paleta de marca y debajo los
+tokens semánticos que la usan:
+
+| Color | HEX | Uso |
+|---|---|---|
+| Crema | `#FFF8F1` | Fondo principal |
+| Rosa pastel | `#F7D6D8` | Superficies secundarias |
+| Rosa empolvado | `#DF8F9B` | Barra lateral |
+| Rosa intenso | `#C96C7C` | Acciones principales |
+| Café chocolate | `#48271F` | Títulos y textos |
+| Dorado | `#C79445` | Detalles de marca |
+| Blanco cálido | `#FFFCF8` | Tarjetas |
+| Beige | `#F2E4D7` | Bordes y separadores |
+
+Los nombres `--gold`, `--mute`, `--ok`, `--warn`, `--crit` y `--line` los usan
+los scripts para colorear tablas y mensajes: **no los renombres**.
+
+### La navegación lateral
+`index.html`, dentro de `<aside class="sidebar">`. Cada botón lleva
+`data-pane="pN"` (la pestaña que debe abrir) y `data-target="#id"` (hasta dónde
+desplazarse). `js/ui.js` no implementa nada propio: reenvía el clic a la pestaña
+real, así que no hay lógica duplicada.
 
 ---
 
@@ -122,8 +145,26 @@ símplex y devuelve los precios sombra, para la sección de corridas complementa
 python3 build.py      # genera dist/index.html, un solo archivo
 ```
 
-Ese archivo se puede subir a cualquier hosting, abrir desde una USB o publicar
-como artifact. No necesita internet.
+`build.py` incrusta la hoja de estilos, los scripts **y el logo de `assets/`**
+(como data URI), así que `dist/index.html` no depende de ninguna carpeta: se
+puede subir a cualquier hosting, abrir desde una USB o publicar como artifact.
+No necesita internet.
+
+### Vercel
+
+El proyecto es un sitio estático; no hay backend ni paso de compilación obligatorio.
+
+1. Importa el repositorio en Vercel.
+2. Framework Preset: **Other**.
+3. Build Command: vacío. Output Directory: vacío (la raíz).
+4. Deploy.
+
+Vercel sirve `index.html` de la raíz junto con `css/`, `js/`, `lib/` y `assets/`.
+Todas las rutas son relativas, así que funcionan igual en local y en producción.
+
+Si prefieres publicar el archivo único, pon **Output Directory = `dist`**
+(recuerda correr `python3 build.py` antes de hacer commit, porque Vercel no
+ejecuta Python).
 
 ---
 
