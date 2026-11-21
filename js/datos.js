@@ -51,12 +51,11 @@ function tags(X=SOL?.X){
     L.push({x:M.x+p.x, y:M.y+.07+.52, z:M.z+p.z-1.3,
       html:`<span style="color:${COL[i]}">●</span> ${BREVE[i]} <b>${X[i]}</b>`});
   });
-  L.push({x:Scene3D.HORNO.x,y:3.45,z:Scene3D.HORNO.z+.7,cls:'warm',
-    html:`🔥 Horno <b>${num(SOL.horno)}</b>/${num(P.H)} min`});
-  L.push({x:Scene3D.AMASADO.x,y:1.95,z:Scene3D.AMASADO.z-.2,
-    html:`Amasado · <b>${SOL.L.reduce((a,b)=>a+b,0)}</b> recetas`});
-  L.push({x:-2.9,y:2.35,z:2.9,cls:'warm',
-    html:`Mano de obra <b>${num(SOL.mo)}</b>/${num(P.MO)} min-p`});
+  // Antes había además tres etiquetas flotando sobre la cocina con el horno, la
+  // mano de obra y las recetas. Se quitaron: tapaban la escena y repetían lo
+  // que ya dicen las tarjetas de indicadores y el panel de resultado. En la
+  // cocina se quedan solo las cantidades por producto, que son las que hay que
+  // leer sobre la vitrina.
   Scene3D.defLabels(L);
 }
 function fitZoom(){ if(scene3dOK)Scene3D.resize() }
