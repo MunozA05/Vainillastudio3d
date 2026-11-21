@@ -39,6 +39,7 @@ Three.js viene incluido en `lib/`.
 | `build.py` | Empaqueta todo en un solo archivo (`dist/index.html`) para publicar. |
 | `dist/index.html` | La versión ya empaquetada, lista para subir o entregar. **No la edites**: se regenera con `build.py` y se sobrescribe. |
 | `modelo/verificar.js` | `node modelo/verificar.js` comprueba que el solver da los mismos números del notebook. |
+| `modelo/verificar_muebles.js` | `node modelo/verificar_muebles.js` comprueba que ningún pastelero se mete dentro de un mueble, ni parado ni caminando. Mide las cajas reales de la escena. |
 
 ---
 

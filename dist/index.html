@@ -5190,6 +5190,35 @@ const PX=[-1.72,-0.575,0.575,1.72];
 function pilaPos(i){return {x:PX[i%4], z:(i<4? 0.74 : 1.86)}}
 const MOSTRADOR={x:1.95,z:1.55,y:0.98};
 const HORNO={x:-3.5,z:-1.6}, AMASADO={x:-3.15,z:1.7};
+
+/* ---------- circulación de los pasteleros ----------
+   El salón tiene dos zonas separadas por los muebles: el FRENTE (delante de la
+   mesa de amasado y del mostrador, z > 1.6) y el FONDO (entre la mesa, el horno
+   y la parte de atrás del mostrador). El único hueco libre para pasar de una a
+   otra es el pasillo que queda entre la mesa (acaba en x = -1.95) y el
+   mostrador (empieza en x = -0.65). Estos dos nodos describen ese pasillo, y
+   `rutaHacia` los intercala para que los pasteleros rodeen los muebles en vez
+   de atravesarlos. El pastelero mide 0,40 m de radio contando gorro y brazos:
+   ese es el margen que hay que dejar contra cualquier mueble, y lo comprueba
+   `node modelo/verificar_muebles.js`.
+
+   Con los puestos actuales cada pastelero se queda en su zona, así que
+   `rutaHacia` devuelve el camino directo y no hace falta rodear nada. Está
+   aquí como red de seguridad: si alguna vez mueves un puesto a la otra zona,
+   el recorrido se desvía solo por el pasillo en lugar de cruzar los muebles.
+
+   SUELO levanta al pastelero lo justo para que el zapato apoye en la baldosa
+   (que está a y = 0,023) en vez de hundirse en ella.                         */
+const SUELO=.03;
+const PASILLO_FRENTE=[-1.25,2.85], PASILLO_FONDO=[-1.25,.05];
+const enFrente=z=>z>1.6;
+function rutaHacia(chef,destino){
+  const desde=enFrente(chef.position.z), hacia=enFrente(destino[1]);
+  if(desde&&hacia)return [destino];                       // frente → frente: recto
+  if(!desde&&!hacia)return [PASILLO_FONDO,destino];       // fondo → fondo: bordea el mostrador
+  return desde?[PASILLO_FRENTE,PASILLO_FONDO,destino]
+              :[PASILLO_FONDO,PASILLO_FRENTE,destino];
+}
 function cartel(p,txt,w,h,x,y,z,accent){
   const cv=document.createElement('canvas');cv.width=768;cv.height=256;
   const ctx=cv.getContext('2d');
@@ -5286,6 +5315,9 @@ function construir(){
   bloque(ho,0,.95,0,2.0,1.35,1.7,C.lila,.12,.6);
   bloque(ho,0,.95,.87,1.7,.97,.09,0x524139,.06,.75);
   hornoInterior=new T.Group(); ho.add(hornoInterior);
+  // La rejilla y los pasteles se modelaron a la altura de la puerta y asomaban
+  // por delante del cristal; este retranqueo los deja dentro del hueco.
+  hornoInterior.position.z=-.445;
   bloque(hornoInterior,0,.74,.915,1.19,.055,.64,0x7c756e,.02,.3,.45);
   for(let i=0;i<6;i++){
     const x=(i%3-1)*.34,z=.75+Math.floor(i/3)*.27;
@@ -5376,16 +5408,18 @@ function construir(){
   // taburetes
   [.8,2.9].forEach(x=>{const g=new T.Group();g.position.set(x,0,2.85);room.add(g);
     cil(g,0,.36,0,.09,.11,.72,C.madera); cil(g,0,.76,0,.42,.42,.14,0xe0a771,28);
-    [[-.22,0],[0.22,0]].forEach(()=>{});});
+    torus(g,0,.28,0,.25,.022,0xcf9a6a).rotation.x=Math.PI/2;});   // reposapiés
 
   // ----- pasteleros articulados: brazos, piernas, gorros y delantales -----
-  [[-4.25,2.65,C.rosa],[-2.55,2.70,C.azul]].forEach(([x,z,c],k)=>{
+  // Arrancan ya en su sitio de reposo: el rosa delante de la mesa, el azul
+  // detrás, en el pasillo de trabajo que va del horno al mostrador.
+  [[-4.05,2.82,C.rosa],[-2.30,.02,C.azul]].forEach(([x,z,c],k)=>{
     const g=new T.Group();g.position.set(x,0,z);g.rotation.y=-.2;room.add(g);
     const leg=[];
     [-.155,.155].forEach(dx=>{
       const a=new T.Group();add(g,a,dx,.41,0);
       cono(a,0,-.19,0,.118,.10,.39,0x47443f,16);
-      bloque(a,0,-.38,.095,.25,.12,.39,0x654b40,.05,.8);
+      bloque(a,0,-.335,.095,.25,.12,.39,0x654b40,.05,.8);  // zapato apoyado en la baldosa
       leg.push(a);
     });
     cono(g,0,.72,0,.245,.31,.64,k?0xc9d5cd:0xffece1,24);
@@ -5411,7 +5445,8 @@ function construir(){
       esfera(g,Math.sin(a)*.17,1.68,Math.cos(a)*.17,.17,0xfffcf3,.9);
     }
     esfera(g,0,1.72,0,.175,0xfffcf3,.9);
-    g.userData={inicio:new T.Vector3(x,0,z),dest:new T.Vector3(x,0,z),
+    g.position.y=SUELO;
+    g.userData={inicio:new T.Vector3(x,0,z),dest:new T.Vector3(x,0,z),ruta:[],
       arm,leg,tint:c,role:k?'horno':'amasado',walk:0};chefs.push(g);
   });
 
@@ -5612,6 +5647,8 @@ function loop(){
     if(walking){const s=Math.min(dist,dt*2.6);
       p.x+=vx/dist*s;p.z+=vz/dist*s;
       c.rotation.y=Math.atan2(vx,vz);u.walk+=dt*13;
+    }else if(u.ruta&&u.ruta.length){
+      const n=u.ruta.shift(); u.dest.set(n[0],0,n[1]);    // siguiente tramo del pasillo
     }else{c.rotation.y+=(-.28-c.rotation.y)*Math.min(1,dt*2.5)}
     const busy=cocinando&&(i===0?fase==='amasado':fase==='horno'||fase==='empaque');
     u.leg.forEach((part,j)=>{part.rotation.x=walking?Math.sin(u.walk+j*Math.PI)*.55:Math.sin(t*2+j)*.025});
@@ -5620,7 +5657,7 @@ function loop(){
       part.rotation.x=walking?Math.sin(u.walk+j*Math.PI)*.55:busy?-.48+Math.sin(t*11+j*Math.PI)*.25:.09+Math.sin(t*1.5+j)*.05;
       part.rotation.z=busy?signed*.22:signed*.05;
     });
-    p.y=(walking?Math.abs(Math.sin(u.walk))*.052:Math.sin(t*1.7+i*2.1)*.025);
+    p.y=SUELO+(walking?Math.abs(Math.sin(u.walk))*.05:Math.sin(t*1.7+i*2.1)*.014);
   });
   if(mezcla)mezcla.rotation.y+=dt*(fase==='amasado'?14:1);
   flour.forEach(s=>{const k=Math.abs(Math.sin(t*2.5+s.userData.off));
@@ -5674,12 +5711,26 @@ function horno(on){ if(!listo)return;
 function setFase(n){
   fase=n;cocinando=n!=='reposo';
   if(!chefs.length)return;
+  /* Puestos de trabajo. Todos dejan al menos CUERPO (0,40) de margen contra el
+     mueble más cercano, así que el pastelero queda JUNTO a la mesa, al horno o
+     al mostrador, nunca dentro.
+
+     Cada uno trabaja en una zona y no la abandona: el rosa delante de la mesa
+     de amasado, el azul detrás, sobre la línea z ≈ 0 que va del horno hasta la
+     parte de atrás del mostrador. Así los dos se ven de frente desde la cámara,
+     quedan uno a cada lado de la mesa y —sobre todo— sus recorridos son cortos
+     y rectos: en la simulación rápida cada fase dura unas décimas de segundo, y
+     un trayecto largo no daría tiempo a completarse.                          */
   const destinos={
-    amasado:[[-4.05,2.40],[-2.55,1.88]],
-    horno:[[-3.95,2.42],[-3.17,.52]],
-    empaque:[[-4.05,2.42],[.23,2.94]],
-    reposo:[[-4.25,2.65],[-2.55,2.70]]};
-  (destinos[n]||destinos.reposo).forEach((p,i)=>chefs[i].userData.dest.set(p[0],0,p[1]));
+    amasado:[[-3.85,2.78],[-2.70,.02]],   // uno a cada lado de la mesa
+    horno:  [[-4.05,2.82],[-3.17,.02]],   // el azul, junto a la puerta del horno
+    empaque:[[-4.05,2.82],[  .20,.02]],   // el azul despacha detrás del mostrador
+    reposo: [[-4.05,2.82],[-2.30,.02]]};
+  (destinos[n]||destinos.reposo).forEach((p,i)=>{
+    const c=chefs[i], ruta=rutaHacia(c,p);
+    c.userData.ruta=ruta.slice(1);
+    c.userData.dest.set(ruta[0][0],0,ruta[0][1]);
+  });
 }
 function moverBandeja(destino,dur,cb){
   const p={amasado:new T.Vector3(AMASADO.x,1.12,AMASADO.z),
